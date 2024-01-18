@@ -9,17 +9,6 @@ using u1 = unsigned char;
 using u2 = unsigned short;
 using u4 = unsigned int;
 
-struct CPInfo {
-};
-
-// struct JavaClass {
-//     unsigned int magic;
-//     unsigned short minor;
-//     unsigned short major;
-//     unsigned
-//     CPInfo cpInfo;
-// };
-
 struct Decoder {
     std::string buff;
     int cursor;
@@ -36,15 +25,6 @@ struct Decoder {
         return readU2() << 16 | readU2();
     }
 };
-
-// unsigned int readU4(unsigned int cursor, const char *buff) {
-//     // clang-format off
-//     return (readU1(cursor, buff) << 24)
-//     | (readU1(cursor + 1, buff) << 16)
-//     | (readU1(cursor + 2, buff) << 8)
-//     | (buff[cursor + 3] & 0xFF);
-//     // clang-format on
-// }
 
 std::map<u2, std::string> versions = {
     {45, "1.1"},
@@ -183,6 +163,7 @@ int main(int argc, char **argv) {
     printf("InterfacesCount: %u\n", interfacesCount);
     if (interfacesCount != 0) {
         // TODO
+        return 0;
     } else {
         printf("Interfaces: Empty\n");
     }
@@ -191,17 +172,13 @@ int main(int argc, char **argv) {
     printf("FieldsCount: %u\n", fieldsCount);
     if (fieldsCount != 0) {
         // TODO
+        return 0;
     } else {
         printf("Fields: Empty\n");
     }
 
     u2 methodsCount = decoder.readU2();
     printf("MethodsCount: %u\n", methodsCount);
-    if (methodsCount != 0) {
-        // TODO
-    } else {
-        printf("methods: Empty\n");
-    }
 
     auto printAccessFlags = [&](u2 accessFlags) {
         std::string str = "";
@@ -260,13 +237,69 @@ int main(int argc, char **argv) {
                 for (u1 k = 0; k < codeLen;) {
                     u1 opcode = decoder.readU1();
                     switch (opcode) {
+                    case 3: {
+                        printf("\t\t\t\t\t\t> iconst_0 (%u)\n", opcode);
+                        k++;
+                    } break;
+                    case 4: {
+                        printf("\t\t\t\t\t\t> iconst_1 (%u)\n", opcode);
+                        k++;
+                    } break;
                     case 18: {
                         printf("\t\t\t\t\t\t> ldc %u (%u)\n", decoder.readU1(), opcode);
-                        k+=2;
+                        k += 2;
+                    } break;
+                    case 27: {
+                        printf("\t\t\t\t\t\t> iload_1 (%u)\n", opcode);
+                        k++;
+                    } break;
+                    case 28: {
+                        printf("\t\t\t\t\t\t> iload_2 (%u)\n", opcode);
+                        k++;
                     } break;
                     case 42: {
                         printf("\t\t\t\t\t\t> aload_0 (%u)\n", opcode);
                         k++;
+                    } break;
+                    case 43: {
+                        printf("\t\t\t\t\t\t> aload_1 (%u)\n", opcode);
+                        k++;
+                    } break;
+                    case 60: {
+                        printf("\t\t\t\t\t\t> istore_1 (%u)\n", opcode);
+                        k++;
+                    } break;
+                    case 61: {
+                        printf("\t\t\t\t\t\t> istore_2 (%u)\n", opcode);
+                        k++;
+                    } break;
+                    case 76: {
+                        printf("\t\t\t\t\t\t> astore_1 (%u)\n", opcode);
+                        k++;
+                    } break;
+                    case 89: {
+                        printf("\t\t\t\t\t\t> dup (%u)\n", opcode);
+                        k++;
+                    } break;
+                    case 154: {
+                        printf("\t\t\t\t\t\t> ifne %u (%u)\n", decoder.readU2(), opcode);
+                        k += 3;
+                    } break;
+                    case 167: {
+                        printf("\t\t\t\t\t\t> goto %u (%u)\n", decoder.readU2(), opcode);
+                        k += 3;
+                    } break;
+                    case 177: {
+                        printf("\t\t\t\t\t\t> return (%u)\n", opcode);
+                        k++;
+                    } break;
+                    case 178: {
+                        printf("\t\t\t\t\t\t> getstatic %u (%u)\n", decoder.readU2(), opcode);
+                        k += 3;
+                    } break;
+                    case 180: {
+                        printf("\t\t\t\t\t\t> getfield %u (%u)\n", decoder.readU2(), opcode);
+                        k += 3;
                     } break;
                     case 182: {
                         printf("\t\t\t\t\t\t> invokevirtual %u (%u)\n", decoder.readU2(), opcode);
@@ -276,25 +309,21 @@ int main(int argc, char **argv) {
                         printf("\t\t\t\t\t\t> invokespecial %u (%u)\n", decoder.readU2(), opcode);
                         k += 3;
                     } break;
-                    case 177: {
-                        printf("\t\t\t\t\t\t> return (%u)\n", opcode);
-                        k++;
-                    } break;
-                    case 178: {
-                        printf("\t\t\t\t\t\t> getStatic %u (%u)\n", decoder.readU2(), opcode);
+                    case 187: {
+                        printf("\t\t\t\t\t\t> new %u (%u)\n", decoder.readU2(), opcode);
                         k += 3;
                     } break;
                     default: {
                         printf("\t\t\t\t\t\t> Unknown opecode %u\n", opcode);
-                        k++;
-                        (void)decoder.readU1();
+                        return 0;
                     } break;
                     }
                 }
                 printf("\t\t\t\t\t> ExceptionTableLength: %u\n", decoder.readU2());
-                printf("\t\t\t\t\t> AttrCount: %u\n", decoder.readU2());
+                u2 codeAttrCnt = decoder.readU2();
+                printf("\t\t\t\t\t> AttrCount: %u\n", codeAttrCnt);
                 printf("\t\t\t\t\t> Attributes:\n");
-                for (auto k = 0; k < attrCount; k++) {
+                for (u2 k = 0; k < codeAttrCnt; k++) {
                     u2 nameIndex = decoder.readU2();
                     printf("\t\t\t\t\t\t> NameIndex: %u (%s)\n", nameIndex, strings[nameIndex].c_str());
                     u4 attrLen = decoder.readU4();
@@ -308,11 +337,48 @@ int main(int argc, char **argv) {
                             printf("\t\t\t\t\t\t\t\t> StartPC: %u\n", decoder.readU2());
                             printf("\t\t\t\t\t\t\t\t> LineNumber: %u\n", decoder.readU2());
                         }
+                    } else if (strings[nameIndex] == "StackMapTable") {
+                        printf("\t\t\t\t\t\t> StackMapTableAttributes:\n");
+                        u2 numOfEntries = decoder.readU2();
+                        printf("\t\t\t\t\t\t\t> NumberOfEntries: %u\n", numOfEntries);
+                        for (auto o = 0; o < numOfEntries; o++) {
+                            u1 stackFrameTag = decoder.readU1();
+                            printf("\t\t\t\t\t\t\t> StackFrameTag: %u\n", stackFrameTag);
+                            if (stackFrameTag >= 252 && stackFrameTag <= 254) {
+                                printf("\t\t\t\t\t\t\t\t> FrameType: append_frame\n");
+                                printf("\t\t\t\t\t\t\t\t> OffsetDelta: %u\n", decoder.readU2());
+                                auto arrLen = stackFrameTag - 251;
+                                for (auto l = 0; l < arrLen; l++) {
+                                    printf("\t\t\t\t\t\t\t\t> VerificationTypeInfo:\n");
+                                    u1 type = decoder.readU1();
+                                    switch (type) {
+                                    case 1:
+                                        printf("\t\t\t\t\t\t\t\t\t> Tag: Integer\n");
+                                        break;
+                                    case 7: {
+                                        printf("\t\t\t\t\t\t\t\t\t> Tag: Object\n");
+                                        printf("\t\t\t\t\t\t\t\t\t> ConstantPoolIdx: %u\n", decoder.readU2());
+                                    } break;
+                                    default:
+                                        printf("Bad type %u\n", type);
+                                        return 0;
+                                    }
+                                }
+                            } else if(stackFrameTag >= 0 && stackFrameTag <= 63) {
+                                printf("\t\t\t\t\t\t\t\t> FrameType: same\n");
+                            } else {
+                                printf("aldklakd\n");
+                                return 0;
+                            }
+                        }
+                    } else {
+                        printf("BASDDDDD Not parsing: %s\n", strings[nameIndex].c_str());
+                        return 0;
                     }
                 }
             } else {
                 printf("BASDDDDD Not parsing: %s\n", strings[nameIndex].c_str());
-                decoder.cursor += attrLen;
+                return 0;
             }
         }
     }
